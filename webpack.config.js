@@ -1,7 +1,7 @@
 var path = require('path');
 
 module.exports = {
-    entry: './script/init.js',
+    entry: './src/zoom.js',
     output: {
         filename: 'zoom.js',
         path: path.resolve(__dirname, 'dist')
