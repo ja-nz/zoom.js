@@ -18,6 +18,7 @@
  * The MIT License. Copyright © 2016 Nishanth Shanmugham.
  */
 
+
 var current = null;
 var offset = 80;
 var initialScrollPos = -1;
@@ -162,9 +163,6 @@ class ZoomImage {
 
 // Setup code
 
-var setup = (elem) => {
-    elem.addEventListener("click", prepareZoom);
-};
 
 var prepareZoom = e => {
     if (document.body.classList.contains("zoom-overlay-open")) {
@@ -257,8 +255,11 @@ var handleTouchMove = e => {
 var handleClick = () => {
     closeCurrent();
 };
+var setup = (elem) => {
+    elem.addEventListener("click", prepareZoom);
+};
 
-var zoom = Object.create(null);
-zoom.setup = setup;
-
-export { zoom };
+document.addEventListener("DOMContentLoaded", () => {
+    var elems = document.querySelectorAll("img[data-action='zoom']");
+    elems.forEach(e => e.addEventListener("click", prepareZoom));
+});
