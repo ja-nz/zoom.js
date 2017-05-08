@@ -1,5 +1,8 @@
 # ZOOM.JS
 
+Modernizing towards WebComponents!
+
+
 [![npm (scoped)](https://img.shields.io/npm/v/@nishanths/zoom.js.svg)](https://www.npmjs.com/package/@nishanths/zoom.js)
 
 A pure JavaScript image zooming plugin; as seen on
