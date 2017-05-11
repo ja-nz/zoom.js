@@ -4,7 +4,6 @@
   "description": "Medium.com's image zoom with no dependencies",
   "main": "dist/zoom.js",
   "scripts": {
-    "prod": "webpack -p",
     "dev": "webpack -d",
     "uglify": "uglifyjs dist/zoom.js -o dist/zoom.min.js"
   },
@@ -23,9 +22,6 @@
   },
   "homepage": "https://github.com/nishanths/zoom.js",
   "devDependencies": {
-    "babel-core": "^6.24.1",
-    "babel-loader": "^7.0.0",
-    "babel-preset-es2015": "^6.24.1",
     "uglify-js": "git://github.com/mishoo/UglifyJS2#harmony",
     "webpack": "^2.5.1"
   }
