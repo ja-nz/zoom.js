@@ -68,14 +68,188 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
-/* unknown exports provided */
-/* all exports used */
-/*!*********************!*\
-  !*** ./src/zoom.js ***!
-  \*********************/
 /***/ (function(module, exports) {
 
-eval("/**\n * Pure JavaScript implementation of zoom.js.\n *\n * Original preamble:\n * zoom.js - It's the best way to zoom an image\n * @version v0.0.2\n * @link https://github.com/fat/zoom.js\n * @license MIT\n *\n * This is a fork of the original zoom.js implementation by @nishanths & @fat.\n * Copyrights for the original project are held by @fat. \n * Copyright (c) 2013 @fat\n */\n\nclass ZoomJS extends HTMLElement {\n\n    constructor() {\n        super();\n        this.zoom = this.firstElementChild;  // Img node\n        this.offset = 80; \n        this.zoomEvents = {\n            zoomOutHandler: () => this.zoomOut.call(this.zoom),\n            keyUp: e => {\n                if (e.keyCode == 27) this.zoomOut.call(this.zoom);\n            },\n            handleTouchStart: e => {\n                let initialTouchPos = -1;\n                const t = e.touches[0];\n                initialTouchPos = t.pageY;\n                e.target.addEventListener(\"touchmove\", e => this.zoomEvents.handleTouchMove(e, initialTouchPos));\n            },\n            handleTouchMove: (e, i) => {\n                const t = e.touches[0];\n                if (Math.abs(t.pageY - i) > 10) {\n                    this.zoomOut.call(this.zoom);\n                    e.target.removeEventListener(\"touchmove\", this);\n                }\n            }\n        };\n    }\n    connectedCallback() {\n        if (this.zoom) {\n            this.zoom.style.cursor = \"zoom-in\";\n            this.addEventListener(\"click\", e => {\n                if (e.metaKey || e.ctrlKey) {\n                    window.open(e.target.src);\n                    return this.connectedCallback();\n                }\n                if (e.target.width >= document.documentElement.clientWidth - this.offset) {\n                    return Error(\"Image exceeds screen width\");\n                }\n                this.zoomIn.call(this.zoom);\n                this.zoomListeners();\n                return \"zoomed\";\n            }, { once: true });\n        }\n    }\n    zoomIn() {\n        this.preservedTransform = this.style.transform;\n        const scale = (() => {\n            const maxScaleFactor = this.naturalWidth / this.width,\n            viewportWidth = document.documentElement.clientWidth - this.parentElement.offset,\n            viewportHeight = document.documentElement.clientHeight - this.parentElement.offset,\n            imageAspectRatio = this.naturalWidth / this.naturalHeight,\n            viewportAspectRatio = viewportWidth / viewportHeight;\n\n            if (this.naturalWidth < viewportWidth && this.naturalHeight < viewportHeight) {\n                return maxScaleFactor;\n            } else if (imageAspectRatio < viewportAspectRatio) {\n                return (viewportHeight / this.naturalHeight) * maxScaleFactor;\n            } else {\n                return (viewportWidth / this.naturalWidth) * maxScaleFactor;\n            }\n        })();\n\n        const imageOffset = (() => {\n            const rect = this.getBoundingClientRect();\n            return {\n                top: rect.top + window.pageYOffset - document.documentElement.clientTop,\n                left: rect.left + window.pageXOffset - document.documentElement.clientLeft\n            };\n        })();\n\n        Object.assign(this.parentElement.style, {\n            display: \"block\",\n            transition: \"all 300ms\"\n        });\n\n        Object.assign(this.style, {\n            outline: \"100vw solid transparent\",\n            transition: \"all 300ms\",\n            pointerEvents: \"auto\",\n            cursor: \"zoom-out\"\n        });\n        Object.assign(document.body.style, {\n            pointerEvents: \"none\"\n        });\n\n        (function animate() {\n            const scrollTop = window.pageYOffset,\n            viewportX = (document.documentElement.clientWidth / 2),\n            viewportY = scrollTop + (document.documentElement.clientHeight / 2),\n            imageCenterX = imageOffset.left + (this.width / 2),\n            imageCenterY = imageOffset.top + (this.height / 2),\n            tx = viewportX - imageCenterX,\n            ty = viewportY - imageCenterY,\n            tz = 0;\n\n            Object.assign(this.parentElement.style, {\n                transform: `translate3d(${tx}px, ${ty}px, ${tz}px)`\n            });\n            Object.assign(this.style, {\n                outlineColor: \"#fff\",\n                transform: `scale(${scale})`\n            });\n\n        }).call(this);\n    }\n\n    zoomOut() {\n        const sleep = ms =>\n            new Promise((resolve) => window.setTimeout(resolve, ms));\n\n        (async function cleanup() {\n            Object.assign(this.parentElement.style, {\n                transform: `none`\n            });\n            Object.assign(this.style, {\n                outlineColor: \"transparent\",\n                transform: this.preservedTransform\n            });\n\n            await sleep(300);\n\n            Object.assign(this.parentElement.style, {\n                display: \"\",\n                transition: \"\"\n            });\n            Object.assign(this.style, {\n                outline: \"\",\n                outlineColor: \"\",\n                transition: \"\",\n                cursor: \"zoom-in\"\n            });\n\n            Object.assign(document.body.style, {\n                pointerEvents: \"auto\"\n            });\n            this.parentElement.zoomListeners(\"remove\");\n            // Restart\n            this.parentElement.connectedCallback();\n\n        }).call(this);\n    }\n\n    zoomListeners(remove) {\n        if (remove) {\n            document.removeEventListener(\"scroll\", this.zoomEvents.zoomOutHandler);\n            document.removeEventListener(\"keyup\", this.zoomEvents.keyUp);\n            document.removeEventListener(\"touchstart\", this.zoomEvents.handleTouchStart);\n            document.removeEventListener(\"click\", this.zoomEvents.zoomOutHandler, true);\n        } else {\n            document.addEventListener(\"scroll\", this.zoomEvents.zoomOutHandler, { once: true });\n            document.addEventListener(\"keyup\", this.zoomEvents.keyUp, { once: true });\n            document.addEventListener(\"touchstart\", this.zoomEvents.handleTouchStart, { once: true });\n            document.addEventListener(\"click\", this.zoomEvents.zoomOutHandler, { capture: true, once: true });\n        }\n    }\n}\ncustomElements.define('zoom-js', ZoomJS);\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiMC5qcyIsInNvdXJjZXMiOlsid2VicGFjazovLy8uL3NyYy96b29tLmpzPzc2NzIiXSwic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBQdXJlIEphdmFTY3JpcHQgaW1wbGVtZW50YXRpb24gb2Ygem9vbS5qcy5cbiAqXG4gKiBPcmlnaW5hbCBwcmVhbWJsZTpcbiAqIHpvb20uanMgLSBJdCdzIHRoZSBiZXN0IHdheSB0byB6b29tIGFuIGltYWdlXG4gKiBAdmVyc2lvbiB2MC4wLjJcbiAqIEBsaW5rIGh0dHBzOi8vZ2l0aHViLmNvbS9mYXQvem9vbS5qc1xuICogQGxpY2Vuc2UgTUlUXG4gKlxuICogVGhpcyBpcyBhIGZvcmsgb2YgdGhlIG9yaWdpbmFsIHpvb20uanMgaW1wbGVtZW50YXRpb24gYnkgQG5pc2hhbnRocyAmIEBmYXQuXG4gKiBDb3B5cmlnaHRzIGZvciB0aGUgb3JpZ2luYWwgcHJvamVjdCBhcmUgaGVsZCBieSBAZmF0LiBcbiAqIENvcHlyaWdodCAoYykgMjAxMyBAZmF0XG4gKi9cblxuY2xhc3MgWm9vbUpTIGV4dGVuZHMgSFRNTEVsZW1lbnQge1xuXG4gICAgY29uc3RydWN0b3IoKSB7XG4gICAgICAgIHN1cGVyKCk7XG4gICAgICAgIHRoaXMuem9vbSA9IHRoaXMuZmlyc3RFbGVtZW50Q2hpbGQ7ICAvLyBJbWcgbm9kZVxuICAgICAgICB0aGlzLm9mZnNldCA9IDgwOyBcbiAgICAgICAgdGhpcy56b29tRXZlbnRzID0ge1xuICAgICAgICAgICAgem9vbU91dEhhbmRsZXI6ICgpID0+IHRoaXMuem9vbU91dC5jYWxsKHRoaXMuem9vbSksXG4gICAgICAgICAgICBrZXlVcDogZSA9PiB7XG4gICAgICAgICAgICAgICAgaWYgKGUua2V5Q29kZSA9PSAyNykgdGhpcy56b29tT3V0LmNhbGwodGhpcy56b29tKTtcbiAgICAgICAgICAgIH0sXG4gICAgICAgICAgICBoYW5kbGVUb3VjaFN0YXJ0OiBlID0+IHtcbiAgICAgICAgICAgICAgICBsZXQgaW5pdGlhbFRvdWNoUG9zID0gLTE7XG4gICAgICAgICAgICAgICAgY29uc3QgdCA9IGUudG91Y2hlc1swXTtcbiAgICAgICAgICAgICAgICBpbml0aWFsVG91Y2hQb3MgPSB0LnBhZ2VZO1xuICAgICAgICAgICAgICAgIGUudGFyZ2V0LmFkZEV2ZW50TGlzdGVuZXIoXCJ0b3VjaG1vdmVcIiwgZSA9PiB0aGlzLnpvb21FdmVudHMuaGFuZGxlVG91Y2hNb3ZlKGUsIGluaXRpYWxUb3VjaFBvcykpO1xuICAgICAgICAgICAgfSxcbiAgICAgICAgICAgIGhhbmRsZVRvdWNoTW92ZTogKGUsIGkpID0+IHtcbiAgICAgICAgICAgICAgICBjb25zdCB0ID0gZS50b3VjaGVzWzBdO1xuICAgICAgICAgICAgICAgIGlmIChNYXRoLmFicyh0LnBhZ2VZIC0gaSkgPiAxMCkge1xuICAgICAgICAgICAgICAgICAgICB0aGlzLnpvb21PdXQuY2FsbCh0aGlzLnpvb20pO1xuICAgICAgICAgICAgICAgICAgICBlLnRhcmdldC5yZW1vdmVFdmVudExpc3RlbmVyKFwidG91Y2htb3ZlXCIsIHRoaXMpO1xuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgIH1cbiAgICAgICAgfTtcbiAgICB9XG4gICAgY29ubmVjdGVkQ2FsbGJhY2soKSB7XG4gICAgICAgIGlmICh0aGlzLnpvb20pIHtcbiAgICAgICAgICAgIHRoaXMuem9vbS5zdHlsZS5jdXJzb3IgPSBcInpvb20taW5cIjtcbiAgICAgICAgICAgIHRoaXMuYWRkRXZlbnRMaXN0ZW5lcihcImNsaWNrXCIsIGUgPT4ge1xuICAgICAgICAgICAgICAgIGlmIChlLm1ldGFLZXkgfHwgZS5jdHJsS2V5KSB7XG4gICAgICAgICAgICAgICAgICAgIHdpbmRvdy5vcGVuKGUudGFyZ2V0LnNyYyk7XG4gICAgICAgICAgICAgICAgICAgIHJldHVybiB0aGlzLmNvbm5lY3RlZENhbGxiYWNrKCk7XG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgIGlmIChlLnRhcmdldC53aWR0aCA+PSBkb2N1bWVudC5kb2N1bWVudEVsZW1lbnQuY2xpZW50V2lkdGggLSB0aGlzLm9mZnNldCkge1xuICAgICAgICAgICAgICAgICAgICByZXR1cm4gRXJyb3IoXCJJbWFnZSBleGNlZWRzIHNjcmVlbiB3aWR0aFwiKTtcbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgdGhpcy56b29tSW4uY2FsbCh0aGlzLnpvb20pO1xuICAgICAgICAgICAgICAgIHRoaXMuem9vbUxpc3RlbmVycygpO1xuICAgICAgICAgICAgICAgIHJldHVybiBcInpvb21lZFwiO1xuICAgICAgICAgICAgfSwgeyBvbmNlOiB0cnVlIH0pO1xuICAgICAgICB9XG4gICAgfVxuICAgIHpvb21JbigpIHtcbiAgICAgICAgdGhpcy5wcmVzZXJ2ZWRUcmFuc2Zvcm0gPSB0aGlzLnN0eWxlLnRyYW5zZm9ybTtcbiAgICAgICAgY29uc3Qgc2NhbGUgPSAoKCkgPT4ge1xuICAgICAgICAgICAgY29uc3QgbWF4U2NhbGVGYWN0b3IgPSB0aGlzLm5hdHVyYWxXaWR0aCAvIHRoaXMud2lkdGgsXG4gICAgICAgICAgICB2aWV3cG9ydFdpZHRoID0gZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LmNsaWVudFdpZHRoIC0gdGhpcy5wYXJlbnRFbGVtZW50Lm9mZnNldCxcbiAgICAgICAgICAgIHZpZXdwb3J0SGVpZ2h0ID0gZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LmNsaWVudEhlaWdodCAtIHRoaXMucGFyZW50RWxlbWVudC5vZmZzZXQsXG4gICAgICAgICAgICBpbWFnZUFzcGVjdFJhdGlvID0gdGhpcy5uYXR1cmFsV2lkdGggLyB0aGlzLm5hdHVyYWxIZWlnaHQsXG4gICAgICAgICAgICB2aWV3cG9ydEFzcGVjdFJhdGlvID0gdmlld3BvcnRXaWR0aCAvIHZpZXdwb3J0SGVpZ2h0O1xuXG4gICAgICAgICAgICBpZiAodGhpcy5uYXR1cmFsV2lkdGggPCB2aWV3cG9ydFdpZHRoICYmIHRoaXMubmF0dXJhbEhlaWdodCA8IHZpZXdwb3J0SGVpZ2h0KSB7XG4gICAgICAgICAgICAgICAgcmV0dXJuIG1heFNjYWxlRmFjdG9yO1xuICAgICAgICAgICAgfSBlbHNlIGlmIChpbWFnZUFzcGVjdFJhdGlvIDwgdmlld3BvcnRBc3BlY3RSYXRpbykge1xuICAgICAgICAgICAgICAgIHJldHVybiAodmlld3BvcnRIZWlnaHQgLyB0aGlzLm5hdHVyYWxIZWlnaHQpICogbWF4U2NhbGVGYWN0b3I7XG4gICAgICAgICAgICB9IGVsc2Uge1xuICAgICAgICAgICAgICAgIHJldHVybiAodmlld3BvcnRXaWR0aCAvIHRoaXMubmF0dXJhbFdpZHRoKSAqIG1heFNjYWxlRmFjdG9yO1xuICAgICAgICAgICAgfVxuICAgICAgICB9KSgpO1xuXG4gICAgICAgIGNvbnN0IGltYWdlT2Zmc2V0ID0gKCgpID0+IHtcbiAgICAgICAgICAgIGNvbnN0IHJlY3QgPSB0aGlzLmdldEJvdW5kaW5nQ2xpZW50UmVjdCgpO1xuICAgICAgICAgICAgcmV0dXJuIHtcbiAgICAgICAgICAgICAgICB0b3A6IHJlY3QudG9wICsgd2luZG93LnBhZ2VZT2Zmc2V0IC0gZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LmNsaWVudFRvcCxcbiAgICAgICAgICAgICAgICBsZWZ0OiByZWN0LmxlZnQgKyB3aW5kb3cucGFnZVhPZmZzZXQgLSBkb2N1bWVudC5kb2N1bWVudEVsZW1lbnQuY2xpZW50TGVmdFxuICAgICAgICAgICAgfTtcbiAgICAgICAgfSkoKTtcblxuICAgICAgICBPYmplY3QuYXNzaWduKHRoaXMucGFyZW50RWxlbWVudC5zdHlsZSwge1xuICAgICAgICAgICAgZGlzcGxheTogXCJibG9ja1wiLFxuICAgICAgICAgICAgdHJhbnNpdGlvbjogXCJhbGwgMzAwbXNcIlxuICAgICAgICB9KTtcblxuICAgICAgICBPYmplY3QuYXNzaWduKHRoaXMuc3R5bGUsIHtcbiAgICAgICAgICAgIG91dGxpbmU6IFwiMTAwdncgc29saWQgdHJhbnNwYXJlbnRcIixcbiAgICAgICAgICAgIHRyYW5zaXRpb246IFwiYWxsIDMwMG1zXCIsXG4gICAgICAgICAgICBwb2ludGVyRXZlbnRzOiBcImF1dG9cIixcbiAgICAgICAgICAgIGN1cnNvcjogXCJ6b29tLW91dFwiXG4gICAgICAgIH0pO1xuICAgICAgICBPYmplY3QuYXNzaWduKGRvY3VtZW50LmJvZHkuc3R5bGUsIHtcbiAgICAgICAgICAgIHBvaW50ZXJFdmVudHM6IFwibm9uZVwiXG4gICAgICAgIH0pO1xuXG4gICAgICAgIChmdW5jdGlvbiBhbmltYXRlKCkge1xuICAgICAgICAgICAgY29uc3Qgc2Nyb2xsVG9wID0gd2luZG93LnBhZ2VZT2Zmc2V0LFxuICAgICAgICAgICAgdmlld3BvcnRYID0gKGRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5jbGllbnRXaWR0aCAvIDIpLFxuICAgICAgICAgICAgdmlld3BvcnRZID0gc2Nyb2xsVG9wICsgKGRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5jbGllbnRIZWlnaHQgLyAyKSxcbiAgICAgICAgICAgIGltYWdlQ2VudGVyWCA9IGltYWdlT2Zmc2V0LmxlZnQgKyAodGhpcy53aWR0aCAvIDIpLFxuICAgICAgICAgICAgaW1hZ2VDZW50ZXJZID0gaW1hZ2VPZmZzZXQudG9wICsgKHRoaXMuaGVpZ2h0IC8gMiksXG4gICAgICAgICAgICB0eCA9IHZpZXdwb3J0WCAtIGltYWdlQ2VudGVyWCxcbiAgICAgICAgICAgIHR5ID0gdmlld3BvcnRZIC0gaW1hZ2VDZW50ZXJZLFxuICAgICAgICAgICAgdHogPSAwO1xuXG4gICAgICAgICAgICBPYmplY3QuYXNzaWduKHRoaXMucGFyZW50RWxlbWVudC5zdHlsZSwge1xuICAgICAgICAgICAgICAgIHRyYW5zZm9ybTogYHRyYW5zbGF0ZTNkKCR7dHh9cHgsICR7dHl9cHgsICR7dHp9cHgpYFxuICAgICAgICAgICAgfSk7XG4gICAgICAgICAgICBPYmplY3QuYXNzaWduKHRoaXMuc3R5bGUsIHtcbiAgICAgICAgICAgICAgICBvdXRsaW5lQ29sb3I6IFwiI2ZmZlwiLFxuICAgICAgICAgICAgICAgIHRyYW5zZm9ybTogYHNjYWxlKCR7c2NhbGV9KWBcbiAgICAgICAgICAgIH0pO1xuXG4gICAgICAgIH0pLmNhbGwodGhpcyk7XG4gICAgfVxuXG4gICAgem9vbU91dCgpIHtcbiAgICAgICAgY29uc3Qgc2xlZXAgPSBtcyA9PlxuICAgICAgICAgICAgbmV3IFByb21pc2UoKHJlc29sdmUpID0+IHdpbmRvdy5zZXRUaW1lb3V0KHJlc29sdmUsIG1zKSk7XG5cbiAgICAgICAgKGFzeW5jIGZ1bmN0aW9uIGNsZWFudXAoKSB7XG4gICAgICAgICAgICBPYmplY3QuYXNzaWduKHRoaXMucGFyZW50RWxlbWVudC5zdHlsZSwge1xuICAgICAgICAgICAgICAgIHRyYW5zZm9ybTogYG5vbmVgXG4gICAgICAgICAgICB9KTtcbiAgICAgICAgICAgIE9iamVjdC5hc3NpZ24odGhpcy5zdHlsZSwge1xuICAgICAgICAgICAgICAgIG91dGxpbmVDb2xvcjogXCJ0cmFuc3BhcmVudFwiLFxuICAgICAgICAgICAgICAgIHRyYW5zZm9ybTogdGhpcy5wcmVzZXJ2ZWRUcmFuc2Zvcm1cbiAgICAgICAgICAgIH0pO1xuXG4gICAgICAgICAgICBhd2FpdCBzbGVlcCgzMDApO1xuXG4gICAgICAgICAgICBPYmplY3QuYXNzaWduKHRoaXMucGFyZW50RWxlbWVudC5zdHlsZSwge1xuICAgICAgICAgICAgICAgIGRpc3BsYXk6IFwiXCIsXG4gICAgICAgICAgICAgICAgdHJhbnNpdGlvbjogXCJcIlxuICAgICAgICAgICAgfSk7XG4gICAgICAgICAgICBPYmplY3QuYXNzaWduKHRoaXMuc3R5bGUsIHtcbiAgICAgICAgICAgICAgICBvdXRsaW5lOiBcIlwiLFxuICAgICAgICAgICAgICAgIG91dGxpbmVDb2xvcjogXCJcIixcbiAgICAgICAgICAgICAgICB0cmFuc2l0aW9uOiBcIlwiLFxuICAgICAgICAgICAgICAgIGN1cnNvcjogXCJ6b29tLWluXCJcbiAgICAgICAgICAgIH0pO1xuXG4gICAgICAgICAgICBPYmplY3QuYXNzaWduKGRvY3VtZW50LmJvZHkuc3R5bGUsIHtcbiAgICAgICAgICAgICAgICBwb2ludGVyRXZlbnRzOiBcImF1dG9cIlxuICAgICAgICAgICAgfSk7XG4gICAgICAgICAgICB0aGlzLnBhcmVudEVsZW1lbnQuem9vbUxpc3RlbmVycyhcInJlbW92ZVwiKTtcbiAgICAgICAgICAgIC8vIFJlc3RhcnRcbiAgICAgICAgICAgIHRoaXMucGFyZW50RWxlbWVudC5jb25uZWN0ZWRDYWxsYmFjaygpO1xuXG4gICAgICAgIH0pLmNhbGwodGhpcyk7XG4gICAgfVxuXG4gICAgem9vbUxpc3RlbmVycyhyZW1vdmUpIHtcbiAgICAgICAgaWYgKHJlbW92ZSkge1xuICAgICAgICAgICAgZG9jdW1lbnQucmVtb3ZlRXZlbnRMaXN0ZW5lcihcInNjcm9sbFwiLCB0aGlzLnpvb21FdmVudHMuem9vbU91dEhhbmRsZXIpO1xuICAgICAgICAgICAgZG9jdW1lbnQucmVtb3ZlRXZlbnRMaXN0ZW5lcihcImtleXVwXCIsIHRoaXMuem9vbUV2ZW50cy5rZXlVcCk7XG4gICAgICAgICAgICBkb2N1bWVudC5yZW1vdmVFdmVudExpc3RlbmVyKFwidG91Y2hzdGFydFwiLCB0aGlzLnpvb21FdmVudHMuaGFuZGxlVG91Y2hTdGFydCk7XG4gICAgICAgICAgICBkb2N1bWVudC5yZW1vdmVFdmVudExpc3RlbmVyKFwiY2xpY2tcIiwgdGhpcy56b29tRXZlbnRzLnpvb21PdXRIYW5kbGVyLCB0cnVlKTtcbiAgICAgICAgfSBlbHNlIHtcbiAgICAgICAgICAgIGRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoXCJzY3JvbGxcIiwgdGhpcy56b29tRXZlbnRzLnpvb21PdXRIYW5kbGVyLCB7IG9uY2U6IHRydWUgfSk7XG4gICAgICAgICAgICBkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKFwia2V5dXBcIiwgdGhpcy56b29tRXZlbnRzLmtleVVwLCB7IG9uY2U6IHRydWUgfSk7XG4gICAgICAgICAgICBkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKFwidG91Y2hzdGFydFwiLCB0aGlzLnpvb21FdmVudHMuaGFuZGxlVG91Y2hTdGFydCwgeyBvbmNlOiB0cnVlIH0pO1xuICAgICAgICAgICAgZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcihcImNsaWNrXCIsIHRoaXMuem9vbUV2ZW50cy56b29tT3V0SGFuZGxlciwgeyBjYXB0dXJlOiB0cnVlLCBvbmNlOiB0cnVlIH0pO1xuICAgICAgICB9XG4gICAgfVxufVxuY3VzdG9tRWxlbWVudHMuZGVmaW5lKCd6b29tLWpzJywgWm9vbUpTKTtcblxuXG5cbi8vLy8vLy8vLy8vLy8vLy8vL1xuLy8gV0VCUEFDSyBGT09URVJcbi8vIC4vc3JjL3pvb20uanNcbi8vIG1vZHVsZSBpZCA9IDBcbi8vIG1vZHVsZSBjaHVua3MgPSAwIl0sIm1hcHBpbmdzIjoiQUFBQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBOyIsInNvdXJjZVJvb3QiOiIifQ==");
+/**
+ * Pure JavaScript implementation of zoom.js.
+ *
+ * Original preamble:
+ * zoom.js - It's the best way to zoom an image
+ * @version v0.0.2
+ * @link https://github.com/fat/zoom.js
+ * @license MIT
+ *
+ * This is a fork of the original zoom.js implementation by @nishanths & @fat.
+ * Copyrights for the original project are held by @fat. 
+ * Copyright (c) 2013 @fat
+ */
+
+class ZoomJS extends HTMLElement {
+
+    constructor() {
+        super();
+        this.zoom = this.firstElementChild;  // Img node
+        this.offset = 80; 
+        this.zoomEvents = {
+            handler: this.zoomOut.bind(this.zoom),
+            firstScroll: e => {
+                const initialScroll = window.pageYOffset; 
+                const furtherScroll = e => {
+                    const pos = window.pageYOffset;
+                    if (Math.abs(initialScroll - pos) >= 40) {
+                        this.zoomEvents.handler();
+                        document.removeEventListener("scroll", furtherScroll);
+                    }
+                };
+                document.addEventListener("scroll", furtherScroll);
+            },
+            escapeKey: e => {
+                if (e.keyCode == 27) this.zoomEvents.handler();
+            },
+            firstTouch: e => {
+                const initialTouchPos = e.touches[0].pageY;
+                const furtherTouch = e => {
+                    const pos = e.touches[0].pageY;
+                    if (Math.abs(initialTouchPos - pos) > 10) {
+                        this.zoomEvents.handler();
+                        document.removeEventListener("touchmove", furtherTouch);
+                    }
+                };
+                document.addEventListener("touchmove", furtherTouch);
+            }
+        };
+    }
+    connectedCallback() {
+        if (this.zoom) {
+            this.zoom.style.cursor = "zoom-in";
+            this.addEventListener("click", e => {
+                if (e.metaKey || e.ctrlKey) {
+                    window.open(e.target.src);
+                    return this.connectedCallback();
+                }
+                if (e.target.width >= document.documentElement.clientWidth - this.offset) {
+                    return Error("Image exceeds screen width");
+                }
+                this.zoomIn.call(this.zoom);
+                this.zoomListeners();
+                return "zoomed";
+            }, { once: true });
+        }
+    }
+    zoomIn() {
+        this.preservedTransform = this.style.transform;
+        const scale = (() => {
+            const maxScaleFactor = this.naturalWidth / this.width,
+            viewportWidth = document.documentElement.clientWidth - this.parentElement.offset,
+            viewportHeight = document.documentElement.clientHeight - this.parentElement.offset,
+            imageAspectRatio = this.naturalWidth / this.naturalHeight,
+            viewportAspectRatio = viewportWidth / viewportHeight;
+
+            if (this.naturalWidth < viewportWidth && this.naturalHeight < viewportHeight) {
+                return maxScaleFactor;
+            } else if (imageAspectRatio < viewportAspectRatio) {
+                return (viewportHeight / this.naturalHeight) * maxScaleFactor;
+            } else {
+                return (viewportWidth / this.naturalWidth) * maxScaleFactor;
+            }
+        })();
+
+        const imageOffset = (() => {
+            const rect = this.getBoundingClientRect();
+            return {
+                top: rect.top + window.pageYOffset - document.documentElement.clientTop,
+                left: rect.left + window.pageXOffset - document.documentElement.clientLeft
+            };
+        })();
+
+        Object.assign(this.parentElement.style, {
+            display: "block",
+            transition: "all 300ms"
+        });
+
+        Object.assign(this.style, {
+            outline: "100vw solid transparent",
+            transition: "all 300ms",
+            pointerEvents: "auto",
+            cursor: "zoom-out"
+        });
+        Object.assign(document.body.style, {
+            pointerEvents: "none"
+        });
+
+        (function animate() {
+            const scrollTop = window.pageYOffset,
+            viewportX = (document.documentElement.clientWidth / 2),
+            viewportY = scrollTop + (document.documentElement.clientHeight / 2),
+            imageCenterX = imageOffset.left + (this.width / 2),
+            imageCenterY = imageOffset.top + (this.height / 2),
+            tx = viewportX - imageCenterX,
+            ty = viewportY - imageCenterY,
+            tz = 0;
+
+            Object.assign(this.parentElement.style, {
+                transform: `translate3d(${tx}px, ${ty}px, ${tz}px)`
+            });
+            Object.assign(this.style, {
+                outlineColor: "#fff",
+                transform: `scale(${scale})`
+            });
+
+        }).call(this);
+    }
+
+    zoomOut() {
+        const sleep = ms =>
+            new Promise(resolve => window.setTimeout(resolve, ms));
+
+        (async function cleanup() {
+            Object.assign(this.parentElement.style, {
+                transform: `none`
+            });
+            Object.assign(this.style, {
+                outlineColor: "transparent",
+                transform: this.preservedTransform
+            });
+
+            await sleep(300);
+
+            Object.assign(this.parentElement.style, {
+                display: "",
+                transition: ""
+            });
+            Object.assign(this.style, {
+                outline: "",
+                outlineColor: "",
+                transition: "",
+                cursor: "zoom-in"
+            });
+
+            Object.assign(document.body.style, {
+                pointerEvents: "auto"
+            });
+            this.parentElement.zoomListeners("remove");
+            // Restart
+            this.parentElement.connectedCallback();
+
+        }).call(this);
+    }
+
+    zoomListeners(remove) {
+        if (remove) {
+            document.removeEventListener("scroll", this.zoomEvents.firstScroll);
+            document.removeEventListener("keyup", this.zoomEvents.escapeKey);
+            document.removeEventListener("touchstart", this.zoomEvents.firstTouch);
+            document.removeEventListener("click", this.zoomEvents.handler, true);
+        } else {
+            document.addEventListener("scroll", this.zoomEvents.firstScroll, { once: true });
+            document.addEventListener("keyup", this.zoomEvents.escapeKey, { once: true });
+            document.addEventListener("touchstart", this.zoomEvents.firstTouch, {once: true});
+            document.addEventListener("click", this.zoomEvents.handler, { capture: true, once: true });
+        }
+    }
+}
+customElements.define('zoom-js', ZoomJS);
+
 
 /***/ })
 /******/ ]);
