@@ -19,22 +19,31 @@ class ZoomJS extends HTMLElement {
         this.zoom = this.firstElementChild;  // Img node
         this.offset = 80; 
         this.zoomEvents = {
-            zoomOutHandler: () => this.zoomOut.call(this.zoom),
-            keyUp: e => {
-                if (e.keyCode == 27) this.zoomEvents.zoomOutHandler();
+            handler: this.zoomOut.bind(this.zoom),
+            firstScroll: e => {
+                const initialScroll = window.pageYOffset; 
+                const furtherScroll = e => {
+                    const pos = window.pageYOffset;
+                    if (Math.abs(initialScroll - pos) >= 40) {
+                        this.zoomEvents.handler();
+                        document.removeEventListener("scroll", furtherScroll);
+                    }
+                };
+                document.addEventListener("scroll", furtherScroll);
             },
-            handleTouchStart: e => {
-                let initialTouchPos = -1;
-                const t = e.touches[0];
-                initialTouchPos = t.pageY;
-                e.target.addEventListener("touchmove", e => this.zoomEvents.handleTouchMove(e, initialTouchPos));
+            escapeKey: e => {
+                if (e.keyCode == 27) this.zoomEvents.handler();
             },
-            handleTouchMove: (e, i) => {
-                const t = e.touches[0];
-                if (Math.abs(t.pageY - i) > 10) {
-                    this.zoomEvents.zoomOutHandler();
-                    e.target.removeEventListener("touchmove", this);
-                }
+            firstTouch: e => {
+                const initialTouchPos = e.touches[0].pageY;
+                const furtherTouch = e => {
+                    const pos = e.touches[0].pageY;
+                    if (Math.abs(initialTouchPos - pos) > 10) {
+                        this.zoomEvents.handler();
+                        document.removeEventListener("touchmove", furtherTouch);
+                    }
+                };
+                document.addEventListener("touchmove", furtherTouch);
             }
         };
     }
@@ -58,11 +67,11 @@ class ZoomJS extends HTMLElement {
     zoomIn() {
         this.preservedTransform = this.style.transform;
         const scale = (() => {
-            const maxScaleFactor = this.naturalWidth / this.width;
-            const viewportWidth = document.documentElement.clientWidth - this.parentElement.offset;
-            const viewportHeight = document.documentElement.clientHeight - this.parentElement.offset;
-            const imageAspectRatio = this.naturalWidth / this.naturalHeight;
-            const viewportAspectRatio = viewportWidth / viewportHeight;
+            const maxScaleFactor = this.naturalWidth / this.width,
+            viewportWidth = document.documentElement.clientWidth - this.parentElement.offset,
+            viewportHeight = document.documentElement.clientHeight - this.parentElement.offset,
+            imageAspectRatio = this.naturalWidth / this.naturalHeight,
+            viewportAspectRatio = viewportWidth / viewportHeight;
 
             if (this.naturalWidth < viewportWidth && this.naturalHeight < viewportHeight) {
                 return maxScaleFactor;
@@ -96,15 +105,15 @@ class ZoomJS extends HTMLElement {
             pointerEvents: "none"
         });
 
-        (( /*animate*/ ) => {
-            const scrollTop = window.pageYOffset;
-            const viewportX = (document.documentElement.clientWidth / 2);
-            const viewportY = scrollTop + (document.documentElement.clientHeight / 2);
-            const imageCenterX = imageOffset.left + (this.width / 2);
-            const imageCenterY = imageOffset.top + (this.height / 2);
-            const tx = viewportX - imageCenterX;
-            const ty = viewportY - imageCenterY;
-            const tz = 0;
+        (function animate() {
+            const scrollTop = window.pageYOffset,
+            viewportX = (document.documentElement.clientWidth / 2),
+            viewportY = scrollTop + (document.documentElement.clientHeight / 2),
+            imageCenterX = imageOffset.left + (this.width / 2),
+            imageCenterY = imageOffset.top + (this.height / 2),
+            tx = viewportX - imageCenterX,
+            ty = viewportY - imageCenterY,
+            tz = 0;
 
             Object.assign(this.parentElement.style, {
                 transform: `translate3d(${tx}px, ${ty}px, ${tz}px)`
@@ -114,12 +123,12 @@ class ZoomJS extends HTMLElement {
                 transform: `scale(${scale})`
             });
 
-        })();
+        }).call(this);
     }
 
     zoomOut() {
         const sleep = ms =>
-            new Promise((resolve) => window.setTimeout(resolve, ms));
+            new Promise(resolve => window.setTimeout(resolve, ms));
 
         (async function cleanup() {
             Object.assign(this.parentElement.style, {
@@ -155,15 +164,15 @@ class ZoomJS extends HTMLElement {
 
     zoomListeners(remove) {
         if (remove) {
-            document.removeEventListener("scroll", this.zoomEvents.zoomOutHandler);
-            document.removeEventListener("keyup", this.zoomEvents.keyUp);
-            document.removeEventListener("touchstart", this.zoomEvents.handleTouchStart);
-            document.removeEventListener("click", this.zoomEvents.zoomOutHandler, true);
+            document.removeEventListener("scroll", this.zoomEvents.firstScroll);
+            document.removeEventListener("keyup", this.zoomEvents.escapeKey);
+            document.removeEventListener("touchstart", this.zoomEvents.firstTouch);
+            document.removeEventListener("click", this.zoomEvents.handler, true);
         } else {
-            document.addEventListener("scroll", this.zoomEvents.zoomOutHandler, { once: true });
-            document.addEventListener("keyup", this.zoomEvents.keyUp, { once: true });
-            document.addEventListener("touchstart", this.zoomEvents.handleTouchStart, { once: true });
-            document.addEventListener("click", this.zoomEvents.zoomOutHandler, { capture: true, once: true });
+            document.addEventListener("scroll", this.zoomEvents.firstScroll, { once: true });
+            document.addEventListener("keyup", this.zoomEvents.escapeKey, { once: true });
+            document.addEventListener("touchstart", this.zoomEvents.firstTouch, {once: true});
+            document.addEventListener("click", this.zoomEvents.handler, { capture: true, once: true });
         }
     }
 }
