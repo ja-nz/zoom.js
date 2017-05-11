@@ -24,7 +24,8 @@ class ZoomJS extends HTMLElement {
 
     constructor() {
         super();
-        this.zoom = this.firstElementChild;
+        this.zoom = this.firstElementChild;  // Img node
+        this.offset = 80; 
         this.zoomEvents = {
             zoomOutHandler: () => this.zoomOut.call(this.zoom),
             keyUp: e => {
@@ -53,7 +54,7 @@ class ZoomJS extends HTMLElement {
                     window.open(e.target.src);
                     return this.connectedCallback();
                 }
-                if (e.target.width >= document.documentElement.clientWidth - 80) {
+                if (e.target.width >= document.documentElement.clientWidth - this.offset) {
                     return Error("Image exceeds screen width");
                 }
                 this.zoomIn.call(this.zoom);
@@ -63,12 +64,11 @@ class ZoomJS extends HTMLElement {
         }
     }
     zoomIn() {
-        const offset = 80;
         this.preservedTransform = this.style.transform;
         const scale = (() => {
             const maxScaleFactor = this.naturalWidth / this.width;
-            const viewportWidth = document.documentElement.clientWidth - offset;
-            const viewportHeight = document.documentElement.clientHeight - offset;
+            const viewportWidth = document.documentElement.clientWidth - this.parentElement.offset;
+            const viewportHeight = document.documentElement.clientHeight - this.parentElement.offset;
             const imageAspectRatio = this.naturalWidth / this.naturalHeight;
             const viewportAspectRatio = viewportWidth / viewportHeight;
 
