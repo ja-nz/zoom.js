@@ -2,7 +2,7 @@
 
 Rewritten Zoom.JS as "ready to use" custom element. This implementation makes use of newer JS features like async functions, Promises and self destroying event handlers. For a stable and trusted version of Zoom.JS you migth use the original version by @nishanths: <https://github.com/nishanths/zoom.js>
 
-Zoom.JS looks like [Medium.com](https://medium.com/designing-medium/image-zoom-on-medium-24d146fc0c20). 
+Zoom.JS looks like [Mediums Image Zoom](https://medium.com/designing-medium/image-zoom-on-medium-24d146fc0c20). 
 
 This is a port of @nishanths: <https://github.com/nishanths/zoom.js> version which is a port of the original version by @fat: <https://github.com/fat/zoom.js>.
 
