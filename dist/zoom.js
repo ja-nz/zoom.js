@@ -79,9 +79,6 @@
  * @link https://github.com/fat/zoom.js
  * @license MIT
  *
- * This is a fork of the original zoom.js implementation by @nishanths & @fat.
- * Copyrights for the original project are held by @fat. 
- * Copyright (c) 2013 @fat
  */
 
 class ZoomJS extends HTMLElement {
@@ -89,7 +86,8 @@ class ZoomJS extends HTMLElement {
     constructor() {
         super();
         this.zoom = this.firstElementChild;  // Img node
-        this.offset = 80; 
+        this.offset = 80; // Offset to margin-left
+
         this.zoomEvents = {
             handler: this.zoomOut.bind(this.zoom),
             firstScroll: e => {
@@ -97,8 +95,8 @@ class ZoomJS extends HTMLElement {
                 const furtherScroll = e => {
                     const pos = window.pageYOffset;
                     if (Math.abs(initialScroll - pos) >= 40) {
-                        this.zoomEvents.handler();
                         document.removeEventListener("scroll", furtherScroll);
+                        this.zoomEvents.handler();
                     }
                 };
                 document.addEventListener("scroll", furtherScroll);
@@ -111,15 +109,17 @@ class ZoomJS extends HTMLElement {
                 const furtherTouch = e => {
                     const pos = e.touches[0].pageY;
                     if (Math.abs(initialTouchPos - pos) > 10) {
-                        this.zoomEvents.handler();
                         document.removeEventListener("touchmove", furtherTouch);
+                        this.zoomEvents.handler();
                     }
                 };
                 document.addEventListener("touchmove", furtherTouch);
             }
         };
     }
+
     connectedCallback() {
+        // Initialize after DOM insertion
         if (this.zoom) {
             this.zoom.style.cursor = "zoom-in";
             this.addEventListener("click", e => {
@@ -136,7 +136,9 @@ class ZoomJS extends HTMLElement {
             }, { once: true });
         }
     }
+
     zoomIn() {
+        // this is bound to the child image node
         this.preservedTransform = this.style.transform;
         const scale = (() => {
             const maxScaleFactor = this.naturalWidth / this.width,
@@ -199,8 +201,8 @@ class ZoomJS extends HTMLElement {
     }
 
     zoomOut() {
-        const sleep = ms =>
-            new Promise(resolve => window.setTimeout(resolve, ms));
+        // this is bound to the child image node
+        const sleep = ms => new Promise(resolve => window.setTimeout(resolve, ms));
 
         (async function cleanup() {
             Object.assign(this.parentElement.style, {
@@ -228,7 +230,7 @@ class ZoomJS extends HTMLElement {
                 pointerEvents: "auto"
             });
             this.parentElement.zoomListeners("remove");
-            // Restart
+            // Restart the Zoom Cycle
             this.parentElement.connectedCallback();
 
         }).call(this);
