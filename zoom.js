@@ -1,75 +1,3 @@
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports) {
-
 /**
  * Pure JavaScript implementation of zoom.js.
  *
@@ -79,9 +7,6 @@
  * @link https://github.com/fat/zoom.js
  * @license MIT
  *
- * This is a fork of the original zoom.js implementation by @nishanths & @fat.
- * Copyrights for the original project are held by @fat. 
- * Copyright (c) 2013 @fat
  */
 
 class ZoomJS extends HTMLElement {
@@ -89,7 +14,8 @@ class ZoomJS extends HTMLElement {
     constructor() {
         super();
         this.zoom = this.firstElementChild;  // Img node
-        this.offset = 80; 
+        this.offset = 80; // Offset to margin-left
+
         this.zoomEvents = {
             handler: this.zoomOut.bind(this.zoom),
             firstScroll: e => {
@@ -97,8 +23,8 @@ class ZoomJS extends HTMLElement {
                 const furtherScroll = e => {
                     const pos = window.pageYOffset;
                     if (Math.abs(initialScroll - pos) >= 40) {
-                        this.zoomEvents.handler();
                         document.removeEventListener("scroll", furtherScroll);
+                        this.zoomEvents.handler();
                     }
                 };
                 document.addEventListener("scroll", furtherScroll);
@@ -111,15 +37,17 @@ class ZoomJS extends HTMLElement {
                 const furtherTouch = e => {
                     const pos = e.touches[0].pageY;
                     if (Math.abs(initialTouchPos - pos) > 10) {
-                        this.zoomEvents.handler();
                         document.removeEventListener("touchmove", furtherTouch);
+                        this.zoomEvents.handler();
                     }
                 };
                 document.addEventListener("touchmove", furtherTouch);
             }
         };
     }
+
     connectedCallback() {
+        // Initialize after DOM insertion
         if (this.zoom) {
             this.zoom.style.cursor = "zoom-in";
             this.addEventListener("click", e => {
@@ -136,7 +64,9 @@ class ZoomJS extends HTMLElement {
             }, { once: true });
         }
     }
+
     zoomIn() {
+        // this is bound to the child image node
         this.preservedTransform = this.style.transform;
         const scale = (() => {
             const maxScaleFactor = this.naturalWidth / this.width,
@@ -199,8 +129,8 @@ class ZoomJS extends HTMLElement {
     }
 
     zoomOut() {
-        const sleep = ms =>
-            new Promise(resolve => window.setTimeout(resolve, ms));
+        // this is bound to the child image node
+        const sleep = ms => new Promise(resolve => window.setTimeout(resolve, ms));
 
         (async function cleanup() {
             Object.assign(this.parentElement.style, {
@@ -228,7 +158,7 @@ class ZoomJS extends HTMLElement {
                 pointerEvents: "auto"
             });
             this.parentElement.zoomListeners("remove");
-            // Restart
+            // Restart the Zoom Cycle
             this.parentElement.connectedCallback();
 
         }).call(this);
@@ -249,7 +179,3 @@ class ZoomJS extends HTMLElement {
     }
 }
 customElements.define('zoom-js', ZoomJS);
-
-
-/***/ })
-/******/ ]);
